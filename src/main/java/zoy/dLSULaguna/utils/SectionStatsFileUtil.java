@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 
 /**
  * Utility class for direct interactions with the 'section_stats.yml' file.
@@ -20,22 +21,26 @@ public class SectionStatsFileUtil {
     private static DLSULaguna plugin;
     private static File sectionStatsFile;
     private static File playerStatsFile; // Needed for recalculation
-    private static File sectionsFile;
+    // private static File sectionsFile;
 
     /**
-     * Initializes the utility class with the plugin instance and prepares file objects.
+     * Initializes the utility class with the plugin instance and prepares file
+     * objects.
      * Must be called once on plugin enable.
+     * 
      * @param pluginInstance The main plugin instance.
      */
     public static void initialize(DLSULaguna pluginInstance) {
         plugin = pluginInstance;
         sectionStatsFile = new File(plugin.getDataFolder(), "section_stats.yml");
         playerStatsFile = new File(plugin.getDataFolder(), "players_stats.yml"); // Initialize player stats file ref too
-        sectionsFile = new File(plugin.getDataFolder(), "sections.yml");
+        // sectionsFile = new File(plugin.getDataFolder(), "sections.yml");
         // Optional: Create section_stats.yml if it doesn't exist
-         /* if (!sectionStatsFile.exists()) {
-             // ... creation logic ...
-         } */
+        /*
+         * if (!sectionStatsFile.exists()) {
+         * // ... creation logic ...
+         * }
+         */
     }
 
     /** Loads the section_stats.yml FileConfiguration */
@@ -46,7 +51,8 @@ public class SectionStatsFileUtil {
         if (!sectionStatsFile.exists()) {
             plugin.getLogger().fine("section_stats.yml does not exist, creating it now.");
             try {
-                if (sectionStatsFile.getParentFile() != null) sectionStatsFile.getParentFile().mkdirs();
+                if (sectionStatsFile.getParentFile() != null)
+                    sectionStatsFile.getParentFile().mkdirs();
                 sectionStatsFile.createNewFile();
             } catch (IOException e) {
                 plugin.getLogger().log(Level.SEVERE, "Could not create missing section_stats.yml!", e);
@@ -72,12 +78,15 @@ public class SectionStatsFileUtil {
     /**
      * Increases a numeric statistic for a specific section in section_stats.yml.
      * Handles Integer and Double types.
+     * 
      * @param section The section identifier (e.g., "A", "B").
      * @param statKey The statistic key (e.g., "Blocks broken", "Points").
-     * @param change The amount to add (can be negative). Must be Integer or Double.
+     * @param change  The amount to add (can be negative). Must be Integer or
+     *                Double.
      */
-    public static void increaseStat(String section, String statKey, Object change) {
-        if (section == null || statKey == null) return;
+    public static void increaseStat(Section section, String statKey, Object change) {
+        if (section == null || statKey == null)
+            return;
 
         FileConfiguration config = loadConfig();
         String path = section + "." + statKey;
@@ -91,7 +100,8 @@ public class SectionStatsFileUtil {
             double current = config.getDouble(path, 0.0); // Default to 0.0
             config.set(path, current + delta);
         } else {
-            plugin.getLogger().warning("Unsupported stat type for section increase: " + statKey + " (" + (change != null ? change.getClass().getSimpleName() : "null") + ") in section " + section);
+            plugin.getLogger().warning("Unsupported stat type for section increase: " + statKey + " ("
+                    + (change != null ? change.getClass().getSimpleName() : "null") + ") in section " + section);
             return; // Don't save if type is wrong
         }
         saveConfig(config);
@@ -100,11 +110,13 @@ public class SectionStatsFileUtil {
 
     /**
      * Directly sets the 'Points' value for a specific section in section_stats.yml.
+     * 
      * @param section The section identifier.
-     * @param value The new point value (should be Integer or compatible).
+     * @param value   The new point value (should be Integer or compatible).
      */
-    public static void setPoints(String section, Object value) {
-        if (section == null) return;
+    public static void setPoints(Section section, Object value) {
+        if (section == null)
+            return;
         FileConfiguration config = loadConfig();
         config.set(section + ".Points", value); // Overwrites existing value or creates the path
         saveConfig(config);
@@ -113,26 +125,30 @@ public class SectionStatsFileUtil {
 
     /**
      * Gets a specific integer stat for a section.
-     * @param section The section identifier.
-     * @param statKey The statistic key.
+     * 
+     * @param section      The section identifier.
+     * @param statKey      The statistic key.
      * @param defaultValue The default value if not found.
      * @return The integer value or default.
      */
-    public static int getStatInt(String section, String statKey, int defaultValue) {
-        if (section == null || statKey == null) return defaultValue;
+    public static int getStatInt(Section section, String statKey, int defaultValue) {
+        if (section == null || statKey == null)
+            return defaultValue;
         FileConfiguration config = loadConfig();
         return config.getInt(section + "." + statKey, defaultValue);
     }
 
     /**
      * Gets a specific double stat for a section.
-     * @param section The section identifier.
-     * @param statKey The statistic key.
+     * 
+     * @param section      The section identifier.
+     * @param statKey      The statistic key.
      * @param defaultValue The default value if not found.
      * @return The double value or default.
      */
-    public static double getStatDouble(String section, String statKey, double defaultValue) {
-        if (section == null || statKey == null) return defaultValue;
+    public static double getStatDouble(Section section, String statKey, double defaultValue) {
+        if (section == null || statKey == null)
+            return defaultValue;
         FileConfiguration config = loadConfig();
         return config.getDouble(section + "." + statKey, defaultValue);
     }
@@ -140,32 +156,43 @@ public class SectionStatsFileUtil {
     /**
      * Gets the entire ConfigurationSection for a given section key.
      * Useful for iterating through all stats of a section.
+     * 
      * @param section The section identifier.
      * @return The ConfigurationSection or null if not found.
      */
-    public static ConfigurationSection getSectionData(String section) {
-        if (section == null) return null;
+    public static ConfigurationSection getSectionData(Section section) {
+        if (section == null)
+            return null;
         FileConfiguration config = loadConfig();
-        return config.getConfigurationSection(section);
+        return config.getConfigurationSection(section.toString());
     }
 
     /**
      * Gets all top-level section keys (e.g., "A", "B", "C").
+     * 
      * @return A Set of section keys.
      */
-    public static java.util.Set<String> getSectionKeys() {
+    public static java.util.Set<Section> getSectionKeys() {
         FileConfiguration config = loadConfig();
-        return config.getKeys(false);
+        return config.getKeys(false)
+                .stream()
+                .flatMap((sectionString) -> Section.fromString(sectionString).stream()) // Is it ok to discard the
+                                                                                        // sections that don't fit
+                                                                                        // the [Section] format?
+                .collect(Collectors.toSet());
     }
 
     /**
      * Decrements the 'Members' count for a given section by one.
      * Ensures the count does not go below zero.
+     * 
      * @param section The section identifier.
-     * @return true if the count was successfully decremented and saved, false otherwise.
+     * @return true if the count was successfully decremented and saved, false
+     *         otherwise.
      */
-    public static boolean decrementMemberCount(String section) {
-        if (section == null) return false;
+    public static boolean decrementMemberCount(Section section) /* Should this be a section type? */ {
+        if (section == null)
+            return false;
         FileConfiguration config = loadConfig();
         String memberPath = section + ".Members";
         int currentMembers = config.getInt(memberPath, 0); // Default to 0
@@ -176,15 +203,18 @@ public class SectionStatsFileUtil {
             plugin.getLogger().info("Decremented member count for section " + section + " to " + (currentMembers - 1));
             return true;
         } else {
-            plugin.getLogger().warning("Attempted to decrement member count for section " + section + ", but count was already " + currentMembers);
+            plugin.getLogger().warning("Attempted to decrement member count for section " + section
+                    + ", but count was already " + currentMembers);
             return false; // Indicate count was not changed (or already zero)
         }
     }
 
     /**
-     * Recalculates all aggregated statistics for every section based on current player data.
+     * Recalculates all aggregated statistics for every section based on current
+     * player data.
      * Reads from players_stats.yml and overwrites section_stats.yml.
-     * Excludes 'Points' and 'PointsDistribution' from aggregation as they are handled by PointsCalculatorUtil.
+     * Excludes 'Points' and 'PointsDistribution' from aggregation as they are
+     * handled by PointsCalculatorUtil.
      * This is a potentially intensive operation.
      */
     public static void recalculateAggregateStats() {
@@ -204,14 +234,16 @@ public class SectionStatsFileUtil {
 
         for (String sectionKey : playerStats.getKeys(false)) {
             ConfigurationSection sectionPlayerData = playerStats.getConfigurationSection(sectionKey);
-            if (sectionPlayerData == null) continue;
+            if (sectionPlayerData == null)
+                continue;
 
             int memberCount = 0;
             Map<String, Object> aggregatedStats = new HashMap<>();
 
             for (String uuid : sectionPlayerData.getKeys(false)) {
                 ConfigurationSection playerData = sectionPlayerData.getConfigurationSection(uuid);
-                if (playerData == null) continue;
+                if (playerData == null)
+                    continue;
                 memberCount++;
 
                 for (String statKey : playerData.getKeys(false)) {
@@ -224,7 +256,9 @@ public class SectionStatsFileUtil {
                         continue;
                     }
                     // Skip lists or sections unless specifically handled
-                    if (playerData.isList(statKey) || (playerData.isConfigurationSection(statKey) && !statKey.equals("ExampleNestedStatSection"))) { // Adjust if you have known nested sections to aggregate
+                    if (playerData.isList(statKey) || (playerData.isConfigurationSection(statKey)
+                            && !statKey.equals("ExampleNestedStatSection"))) { // Adjust if you have known nested
+                                                                               // sections to aggregate
                         continue;
                     }
 
@@ -244,17 +278,21 @@ public class SectionStatsFileUtil {
                     // Add other numeric types if needed (Float, Short, Byte)
 
                     // --- Handle known nested sections if required ---
-                     /* else if (statKey.equals("ExampleNestedStatSection") && playerData.isConfigurationSection(statKey)) {
-                         ConfigurationSection subStatSection = playerData.getConfigurationSection(statKey);
-                         for(String subStatKey : subStatSection.getKeys(false)){
-                             if (subStatSection.isInt(subStatKey)){
-                                 int subValue = subStatSection.getInt(subStatKey);
-                                 String combinedPath = statKey + "." + subStatKey;
-                                 int currentTotal = (int) aggregatedStats.getOrDefault(combinedPath, 0);
-                                 aggregatedStats.put(combinedPath, currentTotal + subValue);
-                             }
-                         }
-                     } */
+                    /*
+                     * else if (statKey.equals("ExampleNestedStatSection") &&
+                     * playerData.isConfigurationSection(statKey)) {
+                     * ConfigurationSection subStatSection =
+                     * playerData.getConfigurationSection(statKey);
+                     * for(String subStatKey : subStatSection.getKeys(false)){
+                     * if (subStatSection.isInt(subStatKey)){
+                     * int subValue = subStatSection.getInt(subStatKey);
+                     * String combinedPath = statKey + "." + subStatKey;
+                     * int currentTotal = (int) aggregatedStats.getOrDefault(combinedPath, 0);
+                     * aggregatedStats.put(combinedPath, currentTotal + subValue);
+                     * }
+                     * }
+                     * }
+                     */
                 }
             }
 

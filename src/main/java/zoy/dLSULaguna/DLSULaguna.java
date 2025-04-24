@@ -60,11 +60,11 @@ public final class DLSULaguna extends JavaPlugin {
 
         sectionStatsFile = new File(dataFolder, "section_stats.yml");
         playersStatsFile = new File(dataFolder, "players_stats.yml");
-        sectionsFile     = new File(dataFolder, "sections.yml");
+        sectionsFile = new File(dataFolder, "sections.yml");
 
         createFile(sectionStatsFile, "section_stats.yml");
         createFile(playersStatsFile, "players_stats.yml");
-        createFile(sectionsFile,     "sections.yml");
+        createFile(sectionsFile, "sections.yml");
     }
 
     private void createFile(File file, String name) {
@@ -91,12 +91,12 @@ public final class DLSULaguna extends JavaPlugin {
     }
 
     private void initializeGameManagers() {
-        bounties           = new Bounties(this);
-        buildBattle        = new BuildBattle(this);
+        bounties = new Bounties(this);
+        buildBattle = new BuildBattle(this);
         // **Fix**: create the BuildBattle world immediately
         buildBattle.createBuildWorld();
 
-        duels              = new Duels(this);
+        duels = new Duels(this);
         trackPlayerCommand = new TrackPlayerCommand(this);
     }
 
@@ -106,7 +106,7 @@ public final class DLSULaguna extends JavaPlugin {
         getCommand("leavesection").setExecutor(new LeaveSection(this));
         getCommand("tallypoints").setExecutor(new TallyPoints(this));
         getCommand("clearpoints").setExecutor(new ClearPoints(this));
-        getCommand("clearplayerstats").setExecutor(new ClearPlayerStats(this));
+        getCommand("clearplayerstats").setExecutor(new ClearPlayerStats());
         getCommand("doomsday").setExecutor(new DoomsDay(this));
         getCommand("sectionchat").setExecutor(new SectionChat());
         getCommand("seepoints").setExecutor(new SeePoints(this));
@@ -127,8 +127,7 @@ public final class DLSULaguna extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(new PlayerJoinListener(this), this);
         Bukkit.getPluginManager().registerEvents(
                 new PlayerChatListener(this, (SectionChat) getCommand("sectionchat").getExecutor()),
-                this
-        );
+                this);
         Bukkit.getPluginManager().registerEvents(new PlayerStatTracker(this), this);
         Bukkit.getPluginManager().registerEvents(new PlayerSectionListener(this), this);
 
@@ -148,13 +147,16 @@ public final class DLSULaguna extends JavaPlugin {
         Bukkit.getScheduler().runTaskTimerAsynchronously(
                 this,
                 new ScoreUpdateTask(this, discordChannel),
-                20L * 10,   // initial delay: 10s
-                20L * 60    // repeat: 60s
+                20L * 10, // initial delay: 10s
+                20L * 60 // repeat: 60s
         );
         getLogger().info("Scheduled ScoreUpdateTask to run every 1 minute.");
     }
 
-    /** Expose your BuildBattle instance so listeners can call plugin.getBuildBattle().getBuildWorld() */
+    /**
+     * Expose your BuildBattle instance so listeners can call
+     * plugin.getBuildBattle().getBuildWorld()
+     */
     public BuildBattle getBuildBattle() {
         return buildBattle;
     }

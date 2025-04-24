@@ -9,11 +9,9 @@ import org.bukkit.persistence.PersistentDataType;
 import zoy.dLSULaguna.DLSULaguna;
 
 public class PlayerSectionListener implements Listener {
-    private final DLSULaguna plugin;
     private final NamespacedKey sectionDataKey;
 
     public PlayerSectionListener(DLSULaguna plugin) {
-        this.plugin = plugin;
         this.sectionDataKey = new NamespacedKey(plugin, "section_name");
 
         // every 3600 ticks (~3 minutes)
@@ -33,7 +31,6 @@ public class PlayerSectionListener implements Listener {
                     }
                 },
                 0L,
-                3600L
-        );
+                3600L);
     }
 }

@@ -30,7 +30,8 @@ public class PointsCalculatorUtil {
 
         File playersStatsFile = plugin.getPlayersStatsFile();
         if (playersStatsFile == null || !playersStatsFile.exists()) {
-            plugin.getLogger().warning("Cannot calculate player points: players_stats.yml does not exist or file object is null.");
+            plugin.getLogger().warning(
+                    "Cannot calculate player points: players_stats.yml does not exist or file object is null.");
             return;
         }
 
@@ -44,7 +45,8 @@ public class PointsCalculatorUtil {
 
             for (String sectionKey : config.getKeys(false)) {
                 ConfigurationSection sectionData = config.getConfigurationSection(sectionKey);
-                if (sectionData == null) continue;
+                if (sectionData == null)
+                    continue;
 
                 if (sectionData.contains(playerUUID.toString())) {
                     foundSectionPath = sectionKey + "." + playerUUID.toString();
@@ -58,7 +60,8 @@ public class PointsCalculatorUtil {
             }
 
             ConfigurationSection playerConfig = config.getConfigurationSection(foundSectionPath);
-            if (playerConfig == null) continue;
+            if (playerConfig == null)
+                continue;
 
             int totalPoints = 0;
             ConfigurationSection pointsDistribution = playerConfig.getConfigurationSection("PointsDistribution");
@@ -123,7 +126,8 @@ public class PointsCalculatorUtil {
 
             playerConfig.set("Points", totalPoints);
             config.set(foundSectionPath + ".PointsDistribution", pointsDistribution);
-            plugin.getLogger().finer("Updated distribution for " + player.getName() + ": " + pointsDistribution.getValues(false));
+            plugin.getLogger()
+                    .finer("Updated distribution for " + player.getName() + ": " + pointsDistribution.getValues(false));
             plugin.getLogger().finest("Updated total points for " + player.getName() + ": " + totalPoints);
             changesMade = true;
         }
@@ -131,9 +135,11 @@ public class PointsCalculatorUtil {
         if (changesMade) {
             try {
                 config.save(plugin.getPlayersStatsFile());
-                plugin.getLogger().info("Online player points calculation complete. Saved changes to players_stats.yml.");
+                plugin.getLogger()
+                        .info("Online player points calculation complete. Saved changes to players_stats.yml.");
             } catch (IOException e) {
-                plugin.getLogger().log(Level.SEVERE, "Failed to save players_stats.yml after calculating online player points.", e);
+                plugin.getLogger().log(Level.SEVERE,
+                        "Failed to save players_stats.yml after calculating online player points.", e);
             }
         } else {
             plugin.getLogger().info("Online player points calculation complete. No changes detected.");
@@ -148,18 +154,20 @@ public class PointsCalculatorUtil {
 
         File playersStatsFile = plugin.getPlayersStatsFile();
         if (playersStatsFile == null || !playersStatsFile.exists()) {
-            plugin.getLogger().warning("Cannot calculate section points: players_stats.yml does not exist or file object is null.");
+            plugin.getLogger().warning(
+                    "Cannot calculate section points: players_stats.yml does not exist or file object is null.");
             return;
         }
 
         FileConfiguration playersConfig = YamlConfiguration.loadConfiguration(playersStatsFile);
         plugin.getLogger().info("Calculating total points for each section...");
         boolean changesMade = false;
-        Map<String, Integer> sectionTotals = new HashMap<>();
+        Map<Section, Integer> sectionTotals = new HashMap<>();
 
         for (String sectionKey : playersConfig.getKeys(false)) {
             ConfigurationSection sectionPlayerData = playersConfig.getConfigurationSection(sectionKey);
-            if (sectionPlayerData == null) continue;
+            if (sectionPlayerData == null)
+                continue;
 
             int currentSectionTotal = 0;
             for (String uuid : sectionPlayerData.getKeys(false)) {
@@ -168,12 +176,14 @@ public class PointsCalculatorUtil {
                     currentSectionTotal += playersConfig.getInt(playerPointsPath, 0);
                 }
             }
-            sectionTotals.put(sectionKey, currentSectionTotal);
+
+            /* orElseThrow is a bit of a hack */
+            sectionTotals.put(Section.fromString(sectionKey).orElseThrow(), currentSectionTotal);
             plugin.getLogger().finer("Calculated total points for section " + sectionKey + ": " + currentSectionTotal);
         }
 
-        for (Map.Entry<String, Integer> entry : sectionTotals.entrySet()) {
-            String section = entry.getKey();
+        for (Map.Entry<Section, Integer> entry : sectionTotals.entrySet()) {
+            Section section = entry.getKey();
             int newTotal = entry.getValue();
             int oldTotal = SectionStatsFileUtil.getStatInt(section, "Points", 0);
 

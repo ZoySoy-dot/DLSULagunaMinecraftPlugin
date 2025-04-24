@@ -8,6 +8,7 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import zoy.dLSULaguna.DLSULaguna;
+import zoy.dLSULaguna.utils.Section;
 
 import java.io.File;
 import java.util.*;
@@ -26,16 +27,23 @@ public class SectionLeaderboard implements CommandExecutor {
             return true;
         }
 
-        String section = args[0].toUpperCase();
-        File playerStatsFile = new File(plugin.getDataFolder(), "players_stats.yml");
-        FileConfiguration playerData = YamlConfiguration.loadConfiguration(playerStatsFile);
+        final var askedSection = args[0].toUpperCase();
+        final var maybeSection = Section.fromString(askedSection);
 
-        if (!playerData.contains(section)) {
-            sender.sendMessage("§cSection not found: " + section);
+        if (maybeSection.isEmpty()) {
+            sender.sendMessage("§cSection not found: " + askedSection);
             return true;
         }
 
-        ConfigurationSection sectionData = playerData.getConfigurationSection(section);
+        File playerStatsFile = new File(plugin.getDataFolder(), "players_stats.yml");
+        FileConfiguration playerData = YamlConfiguration.loadConfiguration(playerStatsFile);
+
+        if (!playerData.contains(askedSection)) {
+            sender.sendMessage("§cSection not found: " + askedSection);
+            return true;
+        }
+
+        ConfigurationSection sectionData = playerData.getConfigurationSection(askedSection);
         if (sectionData == null) {
             sender.sendMessage("§cNo player data in that section.");
             return true;
@@ -53,11 +61,12 @@ public class SectionLeaderboard implements CommandExecutor {
         sorted.sort((a, b) -> b.getValue().compareTo(a.getValue()));
 
         // Send leaderboard
-        sender.sendMessage("§6Top players in STEM11-§e" + section + "§6:");
+        sender.sendMessage("§6Top players in STEM11-§e" + askedSection + "§6:");
         int rank = 1;
         for (Map.Entry<String, Integer> entry : sorted) {
             String playerName = Bukkit.getOfflinePlayer(UUID.fromString(entry.getKey())).getName();
-            sender.sendMessage("§7#" + rank + " §a" + (playerName != null ? playerName : entry.getKey()) + " §8- §b" + entry.getValue() + " pts");
+            sender.sendMessage("§7#" + rank + " §a" + (playerName != null ? playerName : entry.getKey()) + " §8- §b"
+                    + entry.getValue() + " pts");
             rank++;
         }
 

@@ -15,8 +15,9 @@ import java.util.*;
 public class TrackPlayerCommand implements CommandExecutor, Listener {
 
     private final JavaPlugin plugin;
-    private final Map<String, UUID> sectionTrackers = new HashMap<>(); // Section -> Tracker
-    private final Map<UUID, UUID> trackerToTarget = new HashMap<>();   // Tracker -> Target
+
+    private final Map<String, UUID> targetToTracker = new HashMap<>(); // Target -> Tracker
+    private final Map<UUID, UUID> trackerToTarget = new HashMap<>(); // Tracker -> Target
     private final Map<String, BukkitRunnable> activeTrackers = new HashMap<>();
 
     public TrackPlayerCommand(JavaPlugin plugin) {
@@ -42,33 +43,34 @@ public class TrackPlayerCommand implements CommandExecutor, Listener {
 
         // Check if this player is already tracking someone
         if (trackerToTarget.containsKey(playerUUID)) {
-            player.sendMessage(ChatColor.RED + "You are already tracking another player. You need to wait or if they die/log off.");
+            player.sendMessage(ChatColor.RED
+                    + "You are already tracking another player. You need to wait or if they die/log off.");
             return true;
         }
 
         // Find the target player (case-insensitive)
-        Player target = null;
-        for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-            if (onlinePlayer.getName().equalsIgnoreCase(targetName)) {
-                target = onlinePlayer;
-                break;
-            }
-        }
+        final var maybeTarget = Bukkit
+                .getOnlinePlayers()
+                .stream()
+                .filter((onlinePlayer) -> onlinePlayer.getName().equalsIgnoreCase(targetName))
+                .findFirst();
 
-        if (target == null) {
+        if (maybeTarget.isEmpty()) {
             player.sendMessage(ChatColor.RED + "Player " + targetName + " is not online.");
             return true;
         }
 
-        String sectionIdentifier = target.getName().toLowerCase(); // Use target's lowercase name as section ID
+        final var target = maybeTarget.get();
 
-        if (sectionTrackers.containsKey(sectionIdentifier)) {
+        String targetedUsername = target.getName().toLowerCase(); // Use target's lowercase name as section ID (?)
+
+        if (targetToTracker.containsKey(targetedUsername)) {
             player.sendMessage(ChatColor.RED + "This player is already being tracked by someone else.");
             return true;
         }
 
         // Save tracker and target mappings
-        sectionTrackers.put(sectionIdentifier, playerUUID);
+        targetToTracker.put(targetedUsername, playerUUID);
         trackerToTarget.put(playerUUID, target.getUniqueId());
 
         // Notify target player
@@ -82,7 +84,7 @@ public class TrackPlayerCommand implements CommandExecutor, Listener {
                 Player currentTarget = Bukkit.getPlayer(trackerToTarget.get(playerUUID));
                 if (currentTarget == null || !currentTarget.isOnline()) {
                     player.sendMessage(ChatColor.RED + "Target is no longer online. Tracking ended.");
-                    cancelTracking(sectionIdentifier, playerUUID);
+                    cancelTracking(targetedUsername, playerUUID);
                     return;
                 }
 
@@ -96,7 +98,7 @@ public class TrackPlayerCommand implements CommandExecutor, Listener {
         };
 
         trackerTask.runTaskTimer(plugin, 2400L, 2400L); // Start after 2 mins, repeat every 2 mins
-        activeTrackers.put(sectionIdentifier, trackerTask);
+        activeTrackers.put(targetedUsername, trackerTask);
 
         player.sendMessage(ChatColor.GREEN + "Now tracking player " + target.getName() + ".");
         return true;
@@ -118,16 +120,16 @@ public class TrackPlayerCommand implements CommandExecutor, Listener {
         // Check if the dying/quitting player is a tracker
         if (trackerToTarget.containsKey(playerUUID)) {
             // Cancel their tracking session
-            String sectionToRemove = null;
-            for (Map.Entry<String, UUID> entry : sectionTrackers.entrySet()) {
+            String targetUsername = null;
+            for (Map.Entry<String, UUID> entry : targetToTracker.entrySet()) {
                 if (entry.getValue().equals(playerUUID)) {
-                    sectionToRemove = entry.getKey();
+                    targetUsername = entry.getKey();
                     break;
                 }
             }
 
-            if (sectionToRemove != null) {
-                cancelTracking(sectionToRemove, playerUUID);
+            if (targetUsername != null) {
+                cancelTracking(targetUsername, playerUUID);
                 player.sendMessage(ChatColor.YELLOW + "Your tracking session has ended.");
                 Player target = Bukkit.getPlayer(trackerToTarget.get(playerUUID));
                 if (target != null) {
@@ -150,30 +152,31 @@ public class TrackPlayerCommand implements CommandExecutor, Listener {
         for (UUID trackerUUID : affectedTrackers) {
             Player tracker = Bukkit.getPlayer(trackerUUID);
             if (tracker != null) {
-                tracker.sendMessage(ChatColor.YELLOW + "Your target " + player.getName() + " has logged off or died. Tracking session ended.");
+                tracker.sendMessage(ChatColor.YELLOW + "Your target " + player.getName()
+                        + " has logged off or died. Tracking session ended.");
             }
 
-            String sectionToRemove = null;
-            for (Map.Entry<String, UUID> entry : sectionTrackers.entrySet()) {
+            String targetUsername = null;
+            for (Map.Entry<String, UUID> entry : targetToTracker.entrySet()) {
                 if (entry.getValue().equals(trackerUUID)) {
-                    sectionToRemove = entry.getKey();
+                    targetUsername = entry.getKey();
                     break;
                 }
             }
 
-            if (sectionToRemove != null) {
-                cancelTracking(sectionToRemove, trackerUUID);
+            if (targetUsername != null) {
+                cancelTracking(targetUsername, trackerUUID);
             }
         }
     }
 
-    private void cancelTracking(String section, UUID trackerUUID) {
-        if (activeTrackers.containsKey(section)) {
-            activeTrackers.get(section).cancel();
-            activeTrackers.remove(section);
+    private void cancelTracking(String targetUsername, UUID trackerUUID) {
+        if (activeTrackers.containsKey(targetUsername)) {
+            activeTrackers.get(targetUsername).cancel();
+            activeTrackers.remove(targetUsername);
         }
 
-        sectionTrackers.remove(section);
+        targetToTracker.remove(targetUsername);
         trackerToTarget.remove(trackerUUID);
     }
 }

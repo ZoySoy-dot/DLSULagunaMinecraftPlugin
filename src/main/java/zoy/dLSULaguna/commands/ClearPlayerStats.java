@@ -6,14 +6,10 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import zoy.dLSULaguna.DLSULaguna;
 import zoy.dLSULaguna.utils.PlayerStatsFileUtil;
 
 public class ClearPlayerStats implements CommandExecutor {
-    private final DLSULaguna plugin;
-
-    public ClearPlayerStats(DLSULaguna plugin) {
-        this.plugin = plugin;
+    public ClearPlayerStats() {
     }
 
     @Override

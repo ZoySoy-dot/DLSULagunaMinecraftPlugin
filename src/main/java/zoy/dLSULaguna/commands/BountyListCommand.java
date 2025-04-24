@@ -1,15 +1,13 @@
 package zoy.dLSULaguna.commands;
 
 import org.bukkit.ChatColor;
-import org.bukkit.NamespacedKey;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.entity.Player;
-import org.bukkit.persistence.PersistentDataType;
 import zoy.dLSULaguna.DLSULaguna;
+import zoy.dLSULaguna.utils.Section;
 
 import java.io.File;
 import java.util.*;
@@ -18,38 +16,29 @@ public class BountyListCommand implements CommandExecutor {
 
     private final DLSULaguna plugin;
     private final long cooldownDuration = 24 * 60 * 60 * 1000L; // 24 hours in milliseconds - MATCHES Bounties.java
-    private final NamespacedKey sectionKey;
 
     public BountyListCommand(DLSULaguna plugin) {
         this.plugin = plugin;
-        this.sectionKey = new NamespacedKey(plugin, "section_name");
     }
 
-    private String getPlayerSection(Object playerOrUUID) {
+    private Optional<Section> getPlayerSection(UUID playerUuid) {
         // Load the players' stats YAML file
         File playersStatsFile = new File(plugin.getDataFolder(), "players_stats.yml");
         FileConfiguration playersStatsConfig = YamlConfiguration.loadConfiguration(playersStatsFile);
 
-        // Get the player's UUID based on the input type
-        UUID uuid;
-        if (playerOrUUID instanceof Player) {
-            uuid = ((Player) playerOrUUID).getUniqueId();
-        } else if (playerOrUUID instanceof UUID) {
-            uuid = (UUID) playerOrUUID;
-        } else {
-            return null;  // If it's neither a Player nor a UUID, return null or handle the error as appropriate.
-        }
+        final var playerUuidString = playerUuid.toString();
 
         // Loop through the sections in the YAML file
         for (String sectionKey : playersStatsConfig.getKeys(false)) {
             // Check if the player's UUID exists in the section
-            if (playersStatsConfig.contains(sectionKey + "." + uuid.toString())) {
+            if (playersStatsConfig.contains(sectionKey + "." + playerUuidString.toString())) {
                 // Return the section name if the player's UUID is found
-                return sectionKey;
+                // What happens if the returned string is invalid?
+                return Section.fromString(sectionKey);
             }
         }
 
-        return null;  // Return null if no matching section is found
+        return Optional.empty(); // Return null if no matching section is found
     }
 
     @Override
@@ -105,12 +94,10 @@ public class BountyListCommand implements CommandExecutor {
             long lastClaimTime = entry.getLastClaimTime();
             String claimedBy = entry.getClaimedBy();
 
-            String sectionDisplay = ChatColor.GRAY + " (Section: Unknown)";
-            String section = getPlayerSection(uuid); // Use UUID directly, works offline
-            if (section != null) {
-                sectionDisplay = ChatColor.GRAY + "[" + section + "]";
-            }
-
+            // Possibly use Section.toStringOptional instead?
+            String sectionDisplay = ChatColor.GRAY +
+                    getPlayerSection(uuid).map(
+                            (section) -> "[" + section + "]").orElse("(Section: Unknown)");
 
             String cooldownDisplay = "";
             long currentTime = System.currentTimeMillis();
@@ -120,9 +107,11 @@ public class BountyListCommand implements CommandExecutor {
                 long remainingMinutes = (remainingTime / (1000 * 60)) % 60;
                 String hoursText = remainingHours > 0 ? remainingHours + "h " : "";
                 cooldownDisplay = ChatColor.GRAY + " (Cooldown: " + hoursText + remainingMinutes + "m)";
-                sender.sendMessage(ChatColor.GRAY + name + sectionDisplay + cooldownDisplay + ChatColor.GRAY + " - Potential Reward: " + ChatColor.GREEN + potentialReward + " points");
+                sender.sendMessage(ChatColor.GRAY + name + sectionDisplay + cooldownDisplay + ChatColor.GRAY
+                        + " - Potential Reward: " + ChatColor.GREEN + potentialReward + " points");
             } else {
-                sender.sendMessage(ChatColor.GRAY + sectionDisplay + ChatColor.RED + name + " - Potential Reward: " + ChatColor.GREEN + potentialReward + " points");
+                sender.sendMessage(ChatColor.GRAY + sectionDisplay + ChatColor.RED + name + " - Potential Reward: "
+                        + ChatColor.GREEN + potentialReward + " points");
             }
         }
     }

@@ -23,7 +23,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 import zoy.dLSULaguna.DLSULaguna;
 import zoy.dLSULaguna.utils.PlayerDataUtil;
 import zoy.dLSULaguna.utils.PlayerStatsFileUtil;
-import zoy.dLSULaguna.utils.playerevents.BuildBattle;
+import zoy.dLSULaguna.utils.Section;
 
 import java.io.File;
 import java.io.IOException;
@@ -45,7 +45,7 @@ public class PlayerStatTracker implements Listener {
     public PlayerStatTracker(DLSULaguna plugin) {
         this.plugin = plugin;
         this.sectionKey = new NamespacedKey(plugin, "section_name");
-        this.afkKey     = new NamespacedKey(plugin, "AFK");
+        this.afkKey = new NamespacedKey(plugin, "AFK");
 
         this.blockFile = new File(plugin.getDataFolder(), "blocks.yml");
         if (!blockFile.exists()) {
@@ -96,7 +96,8 @@ public class PlayerStatTracker implements Listener {
 
     @EventHandler
     public void onBlockPlace(BlockPlaceEvent event) {
-        if (!isTrackedWorld(event.getPlayer().getWorld())) return;
+        if (!isTrackedWorld(event.getPlayer().getWorld()))
+            return;
         String key = locationToString(event.getBlockPlaced().getLocation());
         blockConfig.set(key, event.getPlayer().getUniqueId().toString());
         PlayerStatsFileUtil.increaseStat(event.getPlayer(), "Blocks placed", 1);
@@ -106,7 +107,8 @@ public class PlayerStatTracker implements Listener {
     @EventHandler
     public void onBlockBreak(BlockBreakEvent event) {
         Player player = event.getPlayer();
-        if (!isTrackedWorld(player.getWorld())) return;
+        if (!isTrackedWorld(player.getWorld()))
+            return;
 
         String key = locationToString(event.getBlock().getLocation());
         if (blockConfig.contains(key)) {
@@ -152,14 +154,15 @@ public class PlayerStatTracker implements Listener {
     @EventHandler
     public void onPlayerMove(PlayerMoveEvent event) {
         Player player = event.getPlayer();
-        if (!isTrackedWorld(player.getWorld())) return;
+        if (!isTrackedWorld(player.getWorld()))
+            return;
 
         Location from = event.getFrom();
-        Location to   = event.getTo();
+        Location to = event.getTo();
         if (to != null
                 && (from.getBlockX() != to.getBlockX()
-                || from.getBlockY() != to.getBlockY()
-                || from.getBlockZ() != to.getBlockZ())) {
+                        || from.getBlockY() != to.getBlockY()
+                        || from.getBlockZ() != to.getBlockZ())) {
             double distance = from.distance(to);
             PlayerStatsFileUtil.increaseStat(player, "Distance", distance);
         }
@@ -190,7 +193,8 @@ public class PlayerStatTracker implements Listener {
         PlayerStatsFileUtil.setStat(player, "Username", player.getName());
 
         if (!player.hasPlayedBefore() && newSection == null) {
-            player.sendMessage("§a§lWelcome to the server, §b§lSTEM Students§a§l of §2§lDe La Salle University Laguna§a§l!");
+            player.sendMessage(
+                    "§a§lWelcome to the server, §b§lSTEM Students§a§l of §2§lDe La Salle University Laguna§a§l!");
             player.sendMessage("§7Please §e/joinsection <STEM11-Letter> §7to get started and be part of a section.");
         }
 
@@ -239,9 +243,16 @@ public class PlayerStatTracker implements Listener {
 
     private void startPingUpdater(Player player) {
         new BukkitRunnable() {
-            @Override public void run() {
-                if (!player.isOnline()) { cancel(); return; }
-                String section = PlayerDataUtil.getPlayerSection(player);
+            @Override
+            public void run() {
+                if (!player.isOnline()) {
+                    cancel();
+                    return;
+                }
+
+                // What should happen if the player's section is Optional.empty()?
+                String section = Section.toStringOptional(PlayerDataUtil.getPlayerSection(player));
+
                 player.setPlayerListName("[" + section + "]" + player.getName() + " - " + player.getPing() + "ms");
             }
         }.runTaskTimer(plugin, 0L, 1200L);
@@ -251,6 +262,7 @@ public class PlayerStatTracker implements Listener {
     public boolean isPlayerPlaced(Location loc) {
         return blockConfig.contains(locationToString(loc));
     }
+
     public void removePlacedBlock(Location loc) {
         blockConfig.set(locationToString(loc), null);
         maybeSaveBlockFile();

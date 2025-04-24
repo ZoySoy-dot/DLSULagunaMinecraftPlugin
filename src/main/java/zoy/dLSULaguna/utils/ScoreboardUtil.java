@@ -6,7 +6,6 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.scoreboard.*;
 import org.bukkit.entity.Player;
 import zoy.dLSULaguna.DLSULaguna;
-import zoy.dLSULaguna.utils.SectionStatsFileUtil;
 
 import java.util.Set;
 import java.util.logging.Level;
@@ -24,8 +23,9 @@ public class ScoreboardUtil {
 
     /**
      * Starts periodic updates of the section leaderboard on the main thread.
-     * @param trackedStat The statistic key to display (e.g., "Points").
-     * @param title The sidebar title.
+     * 
+     * @param trackedStat   The statistic key to display (e.g., "Points").
+     * @param title         The sidebar title.
      * @param intervalTicks The interval between updates, in ticks.
      */
     public static void startAutoDisplay(String trackedStat, String title, long intervalTicks) {
@@ -35,20 +35,22 @@ public class ScoreboardUtil {
         // Schedule entirely on the main thread to avoid async scoreboard operations
         Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             ScoreboardManager manager = Bukkit.getScoreboardManager();
-            if (manager == null) return;
+            if (manager == null)
+                return;
 
             Scoreboard board = manager.getNewScoreboard();
             Objective obj = board.registerNewObjective("sectionStats", Criteria.DUMMY, title);
             obj.setDisplaySlot(DisplaySlot.SIDEBAR);
 
-            Set<String> sections = SectionStatsFileUtil.getSectionKeys();
+            Set<Section> sections = SectionStatsFileUtil.getSectionKeys();
             if (sections.isEmpty()) {
                 obj.getScore(ChatColor.GRAY + "No sections found").setScore(0);
             } else {
-                for (String sect : sections) {
+                for (final var sect : sections) {
                     ConfigurationSection data = SectionStatsFileUtil.getSectionData(sect);
                     int pts = data != null ? data.getInt(trackedStat, 0) : 0;
-                    obj.getScore(formatName(sect)).setScore(pts);
+                    obj.getScore(formatName(sect.toString())).setScore(pts); // Do we still need formatName with
+                                                                             // [Section] being a type?
                 }
             }
 

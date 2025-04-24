@@ -1,3 +1,6 @@
+# Ignore VS Code user settings
+.vscode
+
 # User-specific stuff
 .idea/
 

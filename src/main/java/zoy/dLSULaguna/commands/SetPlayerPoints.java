@@ -9,9 +9,11 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.jetbrains.annotations.NotNull;
 import zoy.dLSULaguna.DLSULaguna;
 import zoy.dLSULaguna.utils.PlayerStatsFileUtil;
+import zoy.dLSULaguna.utils.Section;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Optional;
 
 public class SetPlayerPoints implements CommandExecutor {
     private final DLSULaguna plugin;
@@ -21,7 +23,8 @@ public class SetPlayerPoints implements CommandExecutor {
     }
 
     @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label,
+            @NotNull String[] args) {
         if (args.length != 3) {
             sender.sendMessage(ChatColor.RED + "Usage: /setplayerpoints <player> <category> <points>");
             return false;
@@ -45,8 +48,9 @@ public class SetPlayerPoints implements CommandExecutor {
             return false;
         }
 
-        String victimSection = PlayerStatsFileUtil.findSectionByUUID(victimUUID);
-        if (victimSection == null) {
+        Optional<Section> victimSection = PlayerStatsFileUtil.findSectionByUUID(victimUUID);
+
+        if (victimSection.isEmpty()) {
             sender.sendMessage(ChatColor.RED + "Error: Player '" + victimName + "' does not belong to a section.");
             return false;
         }
@@ -61,7 +65,8 @@ public class SetPlayerPoints implements CommandExecutor {
             playerStatsConfig.set(path, points);
             try {
                 playerStatsConfig.save(playerStatsFile);
-                sender.sendMessage(ChatColor.GREEN + "Updated " + category + " points for " + victimName + " to " + points + ".");
+                sender.sendMessage(
+                        ChatColor.GREEN + "Updated " + category + " points for " + victimName + " to " + points + ".");
             } catch (IOException e) {
                 plugin.getLogger().severe("Could not save to players_stats.yml!");
                 e.printStackTrace();
@@ -69,7 +74,8 @@ public class SetPlayerPoints implements CommandExecutor {
                 return false;
             }
         } else {
-            sender.sendMessage(ChatColor.YELLOW + "Category '" + category + "' does not exist for player '" + victimName + "'. No changes made.");
+            sender.sendMessage(ChatColor.YELLOW + "Category '" + category + "' does not exist for player '" + victimName
+                    + "'. No changes made.");
         }
 
         return true;

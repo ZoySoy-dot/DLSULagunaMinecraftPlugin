@@ -29,7 +29,7 @@ public class Duels implements Listener, CommandExecutor {
     private final Map<UUID, ItemStack[]> storedInventories = new HashMap<>();
     private final Set<UUID> inDuel = new HashSet<>();
     private final Map<UUID, Location> pendingTeleport = new HashMap<>();
-    private final Map<UUID, Long> duelStartTimes = new HashMap<>();
+    // private final Map<UUID, Long> duelStartTimes = new HashMap<>();
     private int pointsWagered;
 
     public Duels(DLSULaguna plugin) {
@@ -38,8 +38,10 @@ public class Duels implements Listener, CommandExecutor {
 
     // Command to challenge someone to a duel
     @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
-        if (!(sender instanceof Player)) return false;
+    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label,
+            @NotNull String[] args) {
+        if (!(sender instanceof Player))
+            return false;
         Player challenger = (Player) sender;
 
         // Check if any duel is in progress
@@ -66,8 +68,8 @@ public class Duels implements Listener, CommandExecutor {
             return true;
         }
 
-        int challengerPoints = PlayerStatsFileUtil.getStatInt(challenger,"Points", 0);
-        int targetPoints = PlayerStatsFileUtil.getStatInt(target,"Points", 0);
+        int challengerPoints = PlayerStatsFileUtil.getStatInt(challenger, "Points", 0);
+        int targetPoints = PlayerStatsFileUtil.getStatInt(target, "Points", 0);
 
         if (challengerPoints < pointsWagered) {
             challenger.sendMessage(ChatColor.RED + "You don't have enough points to wager that amount.");
@@ -75,12 +77,14 @@ public class Duels implements Listener, CommandExecutor {
         }
 
         if (targetPoints < pointsWagered) {
-            challenger.sendMessage(ChatColor.RED + target.getName() + " doesn't have enough points to wager that amount.");
+            challenger.sendMessage(
+                    ChatColor.RED + target.getName() + " doesn't have enough points to wager that amount.");
             return true;
         }
 
         pendingDuels.put(target.getUniqueId(), challenger.getUniqueId());
-        target.sendMessage(ChatColor.YELLOW + challenger.getName() + " has challenged you to a duel for " + pointsWagered + " points. Type /duelaccept or /dueldeny.");
+        target.sendMessage(ChatColor.YELLOW + challenger.getName() + " has challenged you to a duel for "
+                + pointsWagered + " points. Type /duelaccept or /dueldeny.");
         challenger.sendMessage(ChatColor.YELLOW + "Duel request sent to " + target.getName());
         return true;
     }
@@ -138,6 +142,7 @@ public class Duels implements Listener, CommandExecutor {
         // Countdown
         new BukkitRunnable() {
             int time = 5;
+
             @Override
             public void run() {
                 if (time == 0) {
@@ -146,7 +151,8 @@ public class Duels implements Listener, CommandExecutor {
                     Location loc2 = new Location(Bukkit.getWorld("1"), 274, 292, 536);
                     p1.teleport(loc1);
                     p2.teleport(loc2);
-                    Bukkit.broadcastMessage(ChatColor.GREEN + "Duel has started between " + p1.getName() + " and " + p2.getName() + "for" + pointsWagered + " points.");
+                    Bukkit.broadcastMessage(ChatColor.GREEN + "Duel has started between " + p1.getName() + " and "
+                            + p2.getName() + "for" + pointsWagered + " points.");
                     cancel();
                 } else {
                     p1.sendMessage(ChatColor.YELLOW + "Duel starts in " + time + "...");
@@ -246,6 +252,7 @@ public class Duels implements Listener, CommandExecutor {
             }.runTaskLater(plugin, 20L); // delay to let respawn finish first
         }
     }
+
     public boolean duelAcceptCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player)) {
             sender.sendMessage(ChatColor.RED + "Only players can use this command.");

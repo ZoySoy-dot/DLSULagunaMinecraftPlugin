@@ -13,6 +13,7 @@ import org.bukkit.persistence.PersistentDataType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import zoy.dLSULaguna.DLSULaguna;
+import zoy.dLSULaguna.utils.Section;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -23,13 +24,14 @@ public class LeaveSection implements CommandExecutor, TabCompleter {
     private final DLSULaguna plugin;
     private final NamespacedKey section_key;
 
-    public LeaveSection(DLSULaguna plugin){
+    public LeaveSection(DLSULaguna plugin) {
         this.plugin = plugin;
         this.section_key = new NamespacedKey(plugin, "section_name");
     }
 
     @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label,
+            @NotNull String[] args) {
 
         // Permission check
         if (!sender.hasPermission("dlsulaguna.leavesection")) {
@@ -51,15 +53,17 @@ public class LeaveSection implements CommandExecutor, TabCompleter {
             return true;
         }
 
+        final var maybeSection = Section
+                .fromString(victim.getPersistentDataContainer().get(section_key, PersistentDataType.STRING));
+
         // Check if player has a section
-        if (!victim.getPersistentDataContainer().has(section_key, PersistentDataType.STRING)) {
+        if (maybeSection.isEmpty()) {
             sender.sendMessage("§e" + victim.getName() + " is not assigned to any section.");
             return true;
         }
 
-        String section = victim.getPersistentDataContainer().get(section_key, PersistentDataType.STRING);
         String uuid = victim.getUniqueId().toString();
-        String path = section + "." + uuid;
+        String path = maybeSection.get() + "." + uuid;
 
         File statsFile = new File(plugin.getDataFolder(), "players_stats.yml");
         FileConfiguration statsConfig = YamlConfiguration.loadConfiguration(statsFile);
@@ -87,7 +91,8 @@ public class LeaveSection implements CommandExecutor, TabCompleter {
 
     @Nullable
     @Override
-    public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+    public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label,
+            @NotNull String[] args) {
         if (args.length == 1) {
             return Bukkit.getOnlinePlayers().stream()
                     .map(Player::getName)

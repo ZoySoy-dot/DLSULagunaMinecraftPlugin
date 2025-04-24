@@ -64,7 +64,7 @@ public class PlayerDataUtil {
     /**
      * Get section for online or offline player by UUID.
      */
-    public static String getPlayerSection(UUID uuid) {
+    public static Optional<Section> getPlayerSection(UUID uuid) {
         Player online = plugin.getServer().getPlayer(uuid);
         if (online != null) {
             return getPlayerSection(online);
@@ -75,18 +75,26 @@ public class PlayerDataUtil {
     /**
      * Get section for an online player.
      */
-    public static String getPlayerSection(Player player) {
-        if (plugin == null || sectionKey == null || player == null) return null;
+    public static Optional<Section> getPlayerSection(Player player) {
+        if (plugin == null || sectionKey == null || player == null)
+            return Optional.empty();
+
         PersistentDataContainer container = player.getPersistentDataContainer();
-        return container.has(sectionKey, PersistentDataType.STRING)
-                ? container.get(sectionKey, PersistentDataType.STRING)
-                : null;
+
+        if (container.has(sectionKey, PersistentDataType.STRING)) {
+            return Optional.ofNullable(
+                    container.get(sectionKey, PersistentDataType.STRING))
+                    .flatMap((section) -> Section.fromString(section)); // What should happen if a section is invalid?
+                                                                        // Right now it just returns null.
+        }
+
+        return Optional.empty();
     }
 
     /**
      * Set section for online or offline player by UUID.
      */
-    public static void setPlayerSection(UUID uuid, String section) {
+    public static void setPlayerSection(UUID uuid, Optional<Section> section) {
         Player online = plugin.getServer().getPlayer(uuid);
         if (online != null) {
             setPlayerSection(online, section);
@@ -99,11 +107,13 @@ public class PlayerDataUtil {
     /**
      * Set section for an online player.
      */
-    public static void setPlayerSection(Player player, String section) {
-        if (plugin == null || sectionKey == null || player == null) return;
+    public static void setPlayerSection(Player player, Optional<Section> maybeSection) {
+        if (plugin == null || sectionKey == null || player == null)
+            return;
         PersistentDataContainer container = player.getPersistentDataContainer();
-        if (section != null && !section.isEmpty()) {
-            container.set(sectionKey, PersistentDataType.STRING, section);
+        if (maybeSection.isPresent()) {
+            final var section = maybeSection.get();
+            container.set(sectionKey, PersistentDataType.STRING, section.toString());
         } else {
             container.remove(sectionKey);
         }
@@ -113,7 +123,8 @@ public class PlayerDataUtil {
      * Check if a player is online.
      */
     public static boolean isPlayerOnline(Player player) {
-        if (plugin == null || player == null) return false;
+        if (plugin == null || player == null)
+            return false;
         return plugin.getServer().getPlayer(player.getUniqueId()) != null;
     }
 
@@ -121,7 +132,8 @@ public class PlayerDataUtil {
      * Check if a player is online by UUID.
      */
     public static boolean isPlayerOnline(UUID uuid) {
-        if (plugin == null) return false;
+        if (plugin == null)
+            return false;
         return plugin.getServer().getPlayer(uuid) != null;
     }
 
@@ -129,23 +141,25 @@ public class PlayerDataUtil {
      * Remove section data for an online player.
      */
     public static void removePlayerSectionData(Player player) {
-        setPlayerSection(player, null);
+        setPlayerSection(player, Optional.empty());
     }
 
     /**
      * Remove section data for a player by UUID.
      */
     public static void removePlayerSectionData(UUID uuid) {
-        setPlayerSection(uuid, null);
+        setPlayerSection(uuid, Optional.empty());
     }
 
     /**
      * Load a player's saved state into memory.
      */
     public static void loadPlayerState(UUID playerUUID) {
-        if (playerStateConfig == null) return;
+        if (playerStateConfig == null)
+            return;
         String key = playerUUID.toString();
-        if (!playerStateConfig.contains(key)) return;
+        if (!playerStateConfig.contains(key))
+            return;
         try {
             savedInventories.put(playerUUID,
                     deserializeItemStackArray(playerStateConfig.getList(key + ".inventory")));
@@ -176,7 +190,8 @@ public class PlayerDataUtil {
      * Save a player's current state to disk.
      */
     public static void savePlayerState(UUID playerUUID) {
-        if (playerStateConfig == null) return;
+        if (playerStateConfig == null)
+            return;
         Player player = Bukkit.getPlayer(playerUUID);
         if (player == null || !player.isOnline()) {
             plugin.getLogger().warning("Attempted to save state for offline player: " + playerUUID);
@@ -254,7 +269,8 @@ public class PlayerDataUtil {
      * Deserialize a list from YAML into an ItemStack array.
      */
     private static ItemStack[] deserializeItemStackArray(List<?> list) {
-        if (list == null) return new ItemStack[0];
+        if (list == null)
+            return new ItemStack[0];
         return list.stream()
                 .filter(o -> o instanceof ItemStack)
                 .map(o -> (ItemStack) o)
@@ -281,7 +297,8 @@ public class PlayerDataUtil {
      */
     private static List<PotionEffect> deserializePotionEffects(List<?> list) {
         List<PotionEffect> effects = new ArrayList<>();
-        if (list == null) return effects;
+        if (list == null)
+            return effects;
         for (Object obj : list) {
             if (obj instanceof Map<?, ?> map) {
                 try {
